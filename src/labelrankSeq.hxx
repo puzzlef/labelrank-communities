@@ -63,8 +63,8 @@ void labelrankUpdateVertexW(ALabelset<K, V>& a, vector<Labelset<K, V, N>>& as, c
  * @param u given vertex
  * @param q conditional update parameter
  */
-template <class B, class G, class K, class V>
-bool labelrankIsVertexStable(const B& ls, const G& x, K u, V q) {
+template <class G, class K, class V, size_t N>
+bool labelrankIsVertexStable(const vector<Labelset<K, V, N>>& ls, const G& x, K u, V q) {
   K count = K();
   x.forEachEdgeKey(u, [&](auto v) {
     if (labelsetIsSubset(ls[u], ls[v])) count++;
@@ -73,8 +73,28 @@ bool labelrankIsVertexStable(const B& ls, const G& x, K u, V q) {
 }
 
 
+/**
+ * Get best label for each vertex in graph.
+ * @param ls labelsets
+ * @param x original graph
+ */
+template <class G, class K, class V, size_t N>
+auto labelrankBestLabels(const vector<Labelset<K, V, N>>& ls, const G& x) {
+  vector<K> a(x.span());
+  x.forEachVertexKey([&](auto u) {
+    a[u] = ls[u][0].first;
+  });
+  return a;
+}
 
 
+
+
+/**
+ * Detect community membership of each vertex in a graph using LabelRank algorithm.
+ * @param x original graph
+ * @param o labelrank options
+ */
 template <size_t N, class G>
 auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
   using K = typename G::key_type;
@@ -82,34 +102,22 @@ auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
   ALabelset<K, V> la(x.span());
   vector<Labelset<K, V, N>> ls(x.span());
   vector<Labelset<K, V, N>> ms(x.span());
-  auto t0 = timeNow();
-  x.forEachVertexKey([&](auto u) {
-    labelrankInitializeVertexW(la, ls, x, u, V(o.inflation));
-  });
-  auto t1 = timeNow();
-  auto d0 = durationMilliseconds(t0, t1);
-  printf("init_time: %fms\n", d0);
-  int i = 0;
-  size_t updatedPrev = 0;
-  while (true) {
-    size_t updated = 0;
-    auto t2 = timeNow();
-    x.forEachVertexKey([&](auto u) {
-      if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) ms[u] = ls[u];
-      else { labelrankUpdateVertexW(la, ms, ls, x, u, o.inflation); updated++; }
-    }); i++;
-    auto t3 = timeNow();
-    auto d2 = durationMilliseconds(t2, t3);
-    printf("i: %d, updated: %zu, time: %fms\n", i, updated, d2);
-    swap(ls, ms);
-    if (!updated || updated==updatedPrev) break;
-    updatedPrev = updated;
-  }
-  vector<K> a(x.span()); size_t zeros = 0;
-  x.forEachVertexKey([&](auto u) {
-    a[u] = ls[u][0].first;
-    if (a[u]==0) ++zeros;
-  });
-  printf("zeros: %zu\n", zeros);
-  return LabelrankResult(a, i, 0);
+  float t = measureDurationMarked([&](auto mark) {
+    la.clear();
+    ls.clear(); ls.resize(x.span());
+    ms.clear(); ms.resize(x.span());
+    mark([&]() {
+      x.forEachVertexKey([&](auto u) {
+        labelrankInitializeVertexW(la, ls, x, u, V(o.inflation));
+      });
+      for (int i=0; i<o.maxIterations; ++i) {
+        x.forEachVertexKey([&](auto u) {
+          if (labelrankIsVertexStable(ls, x, u, V(o.conditionalUpdate))) ms[u] = ls[u];
+          else labelrankUpdateVertexW(la, ms, ls, x, u, V(o.inflation));
+        });
+        swap(ls, ms);
+      }
+    });
+  }, o.repeat);
+  return LabelrankResult(labelrankBestLabels(ls, x), i, t);
 }
