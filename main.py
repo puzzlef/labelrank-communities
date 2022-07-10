@@ -1,7 +1,7 @@
-# https://www.kaggle.com/wolfram77/puzzlef-labelrank-adjust-parameters
+# https://www.kaggle.com/wolfram77/puzzlef-labelrank-adjust-labelset-capacity
 import os
 from IPython.display import FileLink
-src="labelrank-adjust-parameters"
+src="labelrank-adjust-labelset-capacity"
 inp="/kaggle/input/graphs"
 out="{}.txt".format(src)
 !printf "" > "$out"

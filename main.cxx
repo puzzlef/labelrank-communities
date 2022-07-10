@@ -10,21 +10,28 @@ using namespace std;
 
 
 
-template <class G>
-void adjustOptions(const G& x, int repeat) {
+template <size_t N, class G>
+void performLabelrank(const G& x, float M, int repeat) {
   using K = typename G::key_type;
-  int iterations = 10;
+  int iterations  = 10;
+  float inflation = 1.5f;
+  float conditionalUpdate = 0.5f;
+  LabelrankResult<K> a = labelrankSeq<N>(x, {repeat, iterations, inflation, conditionalUpdate});
+  auto fc = [&](auto u) { return a.membership[u]; };
+  auto Q  = modularity(x, fc, M, 1.0f);
+  printf("[%09.3f ms; %01.6f modularity] labelrankSeq {lset_capacity: %zu}\n", a.time, Q, N);
+}
+
+template <class G>
+void adjustLabelsetCapacity(const G& x, int repeat) {
   auto M = edgeWeight(x)/2;
   auto Q = modularity(x, M, 1.0f);
   printf("[%01.6f modularity] noop\n", Q);
-  for (float conditionalUpdate=1.0f; conditionalUpdate>0.0f; conditionalUpdate-=0.1f) {
-    for (float inflation=2.0f; inflation>=1.0f; inflation-=0.1f) {
-      LabelrankResult<K> a = labelrankSeq<4>(x, {repeat, iterations, inflation, conditionalUpdate});
-      auto fc = [&](auto u) { return a.membership[u]; };
-      auto Q  = modularity(x, fc, M, 1.0f);
-      printf("[%09.3f ms; %01.6f modularity] labelrankSeq {inflation: %01.1f, cond_update: %01.1f}\n", a.time, Q, inflation, conditionalUpdate);
-    }
-  }
+  performLabelrank<1>(x, M, repeat);
+  performLabelrank<2>(x, M, repeat);
+  performLabelrank<4>(x, M, repeat);
+  performLabelrank<8>(x, M, repeat);
+  performLabelrank<16>(x, M, repeat);
 }
 
 
@@ -39,7 +46,7 @@ int main(int argc, char **argv) {
   auto y  = symmetricize(x); print(y); printf(" (symmetricize)\n");
   auto fl = [](auto u) { return true; };
   selfLoopU(y, w, fl); print(y); printf(" (selfLoopAllVertices)\n");
-  adjustOptions(y, repeat);
+  adjustLabelsetCapacity(y, repeat);
   printf("\n");
   return 0;
 }
