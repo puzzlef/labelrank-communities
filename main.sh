@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-src="labelrank-static-vs-dynamic"
+src="labelrank-adjust-parameters"
 out="/home/resources/Documents/subhajit/$src.log"
 ulimit -s unlimited
 printf "" > "$out"

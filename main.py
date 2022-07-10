@@ -1,7 +1,7 @@
-# https://www.kaggle.com/wolfram77/puzzlef-labelrank-static-vs-dynamic
+# https://www.kaggle.com/wolfram77/puzzlef-labelrank-adjust-parameters
 import os
 from IPython.display import FileLink
-src="labelrank-static-vs-dynamic"
+src="labelrank-adjust-parameters"
 inp="/kaggle/input/graphs"
 out="{}.txt".format(src)
 !printf "" > "$out"

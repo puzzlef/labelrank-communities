@@ -11,14 +11,20 @@ using namespace std;
 
 
 template <class G>
-void runExperiment(const G& x, int repeat) {
+void adjustOptions(const G& x, int repeat) {
   using K = typename G::key_type;
+  int iterations = 10;
   auto M = edgeWeight(x)/2;
-  printf("[original_modularity: %f]\n", modularity(x, M, 1.0f));
-  LabelrankResult<K> a = labelrankSeq<4>(x);
-  printf("[%09.3f ms; %03d iters.] labelrankSeq\n", a.time, a.iterations);
-  auto fc = [&](auto u) { return a.membership[u]; };
-  printf("[modularity: %f]\n", modularity(x, fc, M, 1.0f));
+  auto Q = modularity(x, M, 1.0f);
+  printf("[%01.6f modularity] noop\n", Q);
+  for (float conditionalUpdate=1.0f; conditionalUpdate>0.0f; conditionalUpdate-=0.1f) {
+    for (float inflation=2.0f; inflation>=1.0f; inflation-=0.1f) {
+      LabelrankResult<K> a = labelrankSeq<4>(x, {repeat, iterations, inflation, conditionalUpdate});
+      auto fc = [&](auto u) { return a.membership[u]; };
+      auto Q  = modularity(x, fc, M, 1.0f);
+      printf("[%09.3f ms; %01.6f modularity] labelrankSeq {inflation: %01.1f, cond_update: %01.1f}\n", a.time, Q, inflation, conditionalUpdate);
+    }
+  }
 }
 
 
@@ -33,7 +39,7 @@ int main(int argc, char **argv) {
   auto y  = symmetricize(x); print(y); printf(" (symmetricize)\n");
   auto fl = [](auto u) { return true; };
   selfLoopU(y, w, fl); print(y); printf(" (selfLoopAllVertices)\n");
-  runExperiment(y, repeat);
+  adjustOptions(y, repeat);
   printf("\n");
   return 0;
 }

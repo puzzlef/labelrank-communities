@@ -119,5 +119,5 @@ auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
       }
     });
   }, o.repeat);
-  return LabelrankResult(labelrankBestLabels(ls, x), i, t);
+  return LabelrankResult(labelrankBestLabels(ls, x), o.maxIterations, t);
 }
