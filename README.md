@@ -85,6 +85,7 @@ $ ...
 <br>
 
 [![](https://i.imgur.com/sBfj27E.jpg)](https://www.youtube.com/watch?v=UIf4KJXo45g)<br>
+[![DOI](https://zenodo.org/badge/512471326.svg)](https://zenodo.org/badge/latestdoi/512471326)
 
 
 [Prof. Dip Sankar Banerjee]: https://sites.google.com/site/dipsankarban/
