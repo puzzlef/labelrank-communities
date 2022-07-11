@@ -16,7 +16,7 @@ using std::sort;
 
 
 
-// Each vector has a set of labels, which is a fixed array of label ids and
+// Each vertex has a set of labels, which is a fixed array of label ids and
 // associated probabilities. This implies, we allow a maximum of, say, 4
 // labels per vertex. This is done in order to minimize computation. The most
 // probable label is stored first.
