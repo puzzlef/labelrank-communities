@@ -3,8 +3,9 @@ const os = require('os');
 const path = require('path');
 
 const RGRAPH = /^Loading graph .*\/(.*?)\.mtx \.\.\./m;
-const RORDER = /^order: (\d+) size: (\d+) (?:\[\w+\] )?\{\}/m;
-const RRESLT = /^\[(\d+) edges; (.+?) gini_coef\.\] (\w+)/m;
+const RORDER = /^order: (\d+) size: (\d+) (?:\[\w+\] )?\{\} \(selfLoopAllVertices\)/m;
+const RORGNL = /^\[(\S+?) modularity\] noop/;
+const RRESLT = /^\[(\S+?) ms; (\S+?) modularity\] labelrankSeq \{lset_capacity: (\d+)\}/m;
 
 
 
@@ -53,12 +54,20 @@ function readLogLine(ln, data, state) {
     state.order = parseFloat(order);
     state.size  = parseFloat(size);
   }
-  else if (RRESLT.test(ln)) {
-    var [, edges, gini_coefficient, technique] = RRESLT.exec(ln);
+  else if (RORGNL.test(ln)) {
+    var [, modularity] = RORGNL.exec(ln);
     data.get(state.graph).push(Object.assign({}, state, {
-      edges:            parseFloat(edges),
-      gini_coefficient: parseFloat(gini_coefficient),
-      technique
+      time:              0,
+      modularity:        parseFloat(modularity),
+      labelset_capacity: 0,
+    }));
+  }
+  else if (RRESLT.test(ln)) {
+    var [, time, modularity, labelset_capacity] = RRESLT.exec(ln);
+    data.get(state.graph).push(Object.assign({}, state, {
+      time:              parseFloat(time),
+      modularity:        parseFloat(modularity),
+      labelset_capacity: parseFloat(labelset_capacity),
     }));
   }
   return state;
