@@ -115,7 +115,8 @@ auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
         else labelrankUpdateVertexW(la, ms, ls, x, u, V(o.inflation));
       });
     }, o.repeat);
-    auto Q = modularity(x, M, 1.0f);
+    auto fc = [&](auto u) { return ms[u][0].first; };
+    auto Q  = modularity(x, fc, M, 1.0f);
     printf("[%09.3f ms; %03d iteration; %01.6f modularity] labelrankSeq\n", t, i+1, Q);
     swap(ls, ms);
   }
