@@ -43,14 +43,16 @@ void adjustOptions(const G& x, int repeat) {
   auto Q = modularity(x, M, 1.0f);
   printf("[%01.6f modularity] noop\n", Q);
   do {
+    // Using full capacity accumulator labelset (false).
     size_t accumulatorCapacity = x.span();
-    LabelrankResult<K> a = labelrankSeq<4>(x, {repeat, iterations, accumulatorCapacity, inflation, conditionalUpdate});
+    LabelrankResult<K> a = labelrankSeq<false, 4>(x, {repeat, iterations, accumulatorCapacity, inflation, conditionalUpdate});
     auto fc = [&](auto u) { return a.membership[u]; };
     auto Q  = modularity(x, fc, M, 1.0f);
     printf("[%09.3f ms; %01.6f modularity] labelrankSeq\n", a.time, Q);
   } while (0);
   for (size_t accumulatorCapacity : PRIMES) {
-    LabelrankResult<K> a = labelrankSeq<4>(x, {repeat, iterations, accumulatorCapacity, inflation, conditionalUpdate});
+    // Using limited capacity accumulator labelset (true).
+    LabelrankResult<K> a = labelrankSeq<true, 4>(x, {repeat, iterations, accumulatorCapacity, inflation, conditionalUpdate});
     auto fc = [&](auto u) { return a.membership[u]; };
     auto Q  = modularity(x, fc, M, 1.0f);
     printf("[%09.3f ms; %01.6f modularity] labelrankSeq {acc_capacity: %d}\n", a.time, Q, accumulatorCapacity);

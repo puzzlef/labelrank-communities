@@ -175,10 +175,10 @@ inline V labelsetSum(const Labelset<K, V, N>& x) {
  * @param x labelset to combine
  * @param w combining weight
  */
-template <class K, class V, size_t L>
+template <bool H, class K, class V, size_t L>
 inline void labelsetCombineU(ALabelset<K, V>& a, const Labelset<K, V, L>& x, V w) {
   for (auto [k, v] : x)
-    if (k) a.accumulate(k % a.capacity(), w*v);
+    if (k) a.accumulate(H? k % a.capacity() : k, w*v);
 }
 
 

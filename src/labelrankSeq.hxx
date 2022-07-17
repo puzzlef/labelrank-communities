@@ -21,11 +21,11 @@ using std::pow;
  * @param u given vertex
  * @param e exponent value
  */
-template <class G, class K, class V, size_t N>
+template <bool H, class G, class K, class V, size_t N>
 void labelrankInitializeVertexW(ALabelset<K, V>& a, vector<Labelset<K, V, N>>& as, const G& x, K u, V e) {
   V sumw = V(); a.clear();
   x.forEachEdge(u, [&](auto v, auto w) {
-    a.set(v, w);
+    a.set(H? v % a.capacity() : v, w);
     sumw += w;
   });
   labelsetReorderU(a);
@@ -43,11 +43,11 @@ void labelrankInitializeVertexW(ALabelset<K, V>& a, vector<Labelset<K, V, N>>& a
  * @param u given vertex
  * @param e exponent value
  */
-template <class G, class K, class V, size_t N>
+template <bool H, class G, class K, class V, size_t N>
 void labelrankUpdateVertexW(ALabelset<K, V>& a, vector<Labelset<K, V, N>>& as, const vector<Labelset<K, V, N>>& ls, const G& x, K u, V e) {
   V sumw = V(); a.clear();
   x.forEachEdge(u, [&](auto v, auto w) {
-    labelsetCombineU(a, ls[v], w);
+    labelsetCombineU<H>(a, ls[v], w);
     sumw += w;
   });
   labelsetReorderU(a);
@@ -95,7 +95,7 @@ auto labelrankBestLabels(const vector<Labelset<K, V, N>>& ls, const G& x) {
  * @param x original graph
  * @param o labelrank options
  */
-template <size_t N, class G>
+template <bool H, size_t N, class G>
 auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
   using K = typename G::key_type;
   using V = typename G::edge_value_type;
@@ -108,12 +108,12 @@ auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
     ms.clear(); ms.resize(x.span());
     mark([&]() {
       x.forEachVertexKey([&](auto u) {
-        labelrankInitializeVertexW(la, ls, x, u, V(o.inflation));
+        labelrankInitializeVertexW<H>(la, ls, x, u, V(o.inflation));
       });
       for (int i=0; i<o.maxIterations; ++i) {
         x.forEachVertexKey([&](auto u) {
           if (labelrankIsVertexStable(ls, x, u, V(o.conditionalUpdate))) ms[u] = ls[u];
-          else labelrankUpdateVertexW(la, ms, ls, x, u, V(o.inflation));
+          else labelrankUpdateVertexW<H>(la, ms, ls, x, u, V(o.inflation));
         });
         swap(ls, ms);
       }
