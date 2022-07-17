@@ -36,6 +36,9 @@ struct AccumulatorLabelset {
   AccumulatorLabelset(size_t capacity=0): data(capacity) {}
 
   // Read operations.
+  inline size_t capacity() const {
+    return data.size();
+  }
   inline size_t size() const {
     return keys.size();
   }
@@ -175,7 +178,7 @@ inline V labelsetSum(const Labelset<K, V, N>& x) {
 template <class K, class V, size_t L>
 inline void labelsetCombineU(ALabelset<K, V>& a, const Labelset<K, V, L>& x, V w) {
   for (auto [k, v] : x)
-    if (k) a.accumulate(k, w*v);
+    if (k) a.accumulate(k % a.capacity(), w*v);
 }
 
 

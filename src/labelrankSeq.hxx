@@ -99,7 +99,7 @@ template <size_t N, class G>
 auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
   using K = typename G::key_type;
   using V = typename G::edge_value_type;
-  ALabelset<K, V> la(x.span());
+  ALabelset<K, V> la(o.accumulatorCapacity);
   vector<Labelset<K, V, N>> ls(x.span());
   vector<Labelset<K, V, N>> ms(x.span());
   float t = measureDurationMarked([&](auto mark) {

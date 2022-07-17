@@ -7,13 +7,14 @@
 // -----------------
 
 struct LabelrankOptions {
-  int   repeat;
-  int   maxIterations;
-  float inflation;
-  float conditionalUpdate;
+  int    repeat;
+  int    maxIterations;
+  size_t accumulatorCapacity;
+  float  inflation;
+  float  conditionalUpdate;
 
-  LabelrankOptions(int repeat=1, int maxIterations=500, float inflation=1.2f, float conditionalUpdate=0.3f) :
-  repeat(repeat), maxIterations(maxIterations), inflation(inflation), conditionalUpdate(conditionalUpdate) {}
+  LabelrankOptions(int repeat=1, int maxIterations=500, size_t accumulatorCapacity=13, float inflation=1.2f, float conditionalUpdate=0.3f) :
+  repeat(repeat), maxIterations(maxIterations), accumulatorCapacity(accumulatorCapacity), inflation(inflation), conditionalUpdate(conditionalUpdate) {}
 };
 
 

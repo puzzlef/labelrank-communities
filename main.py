@@ -1,7 +1,7 @@
-# https://www.kaggle.com/wolfram77/puzzlef-labelrank-adjust-parameters
+# https://www.kaggle.com/wolfram77/puzzlef-labelrank-adjust-accumulator-capacity
 import os
 from IPython.display import FileLink
-src="labelrank-adjust-parameters"
+src="labelrank-adjust-accumulator-capacity"
 inp="/kaggle/input/graphs"
 out="{}.txt".format(src)
 !printf "" > "$out"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-src="labelrank-adjust-parameters"
+src="labelrank-adjust-accumulator-capacity"
 out="/home/resources/Documents/subhajit/$src.log"
 ulimit -s unlimited
 printf "" > "$out"
