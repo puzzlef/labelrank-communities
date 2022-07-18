@@ -1,5 +1,5 @@
-Comparing the effect of adjustment of parameter of the LabelRank algorithm for
-community detection.
+Effect of adjusting accumulator hashtable capacity of the LabelRank algorithm
+for community detection.
 
 [LabelRank] is an algorithm for **detecting communities in graphs**. *Community*
 *detection* helps us understand the *natural divisions in a network* in an
@@ -20,26 +20,55 @@ low-weighted labels), but instead trim-off labels if they do not fit within
 labelset capacity. *Labels* are **sorted by weight** such that only low-weighted
 labels are eliminated.
 
-In this experiment we adjust the LabelRank parameters `inflation` from `1.1 -
-2.0` and `conditionalUpdate` from `0.1 - 1.0`, in order the obtain parameter
-values that are suitable in general, or suitable to a specific class of graphs.
-We use a fixed `labelset capacity` of `4`, and run the algorithm for exactly `10
-iterations`. We measure the **time** **taken** for the *computation* (performed
-5 times for averaging), and *measure* the **modularity score** (one of the ways
-to measure quality of communities). This is repeated for *seventeen* different
-graphs.
+An **accumulator labelset** is a *hash table* that is used to *combine labels*
+from the neighbors of each vertex in the graph. Its **capacity** is always a
+**prime number**, and the *hash key* is obtained by simply finding the *modulo*
+*of the label id* with the capacity of the accumulator labelset. In order to
+accomodate all labels in the worst case, the accumulator labelset is **normally**
+**initialized** with a *capacity of all the vertices* in the graph. The problem
+with using a **large accumulator labelset** is that it is **not feasible on a**
+**GPU**, where we have a large number of *threads*, but a small amount of *working*
+*memory* (shared memory). For *high-degree vertices*, this would have to be done
+in the **global memory** instead (which is slow). In addition, we would have to
+use `atomicCAS()` operations in order to **avoid collisions** which can further
+drop performance.
 
-From the results, we observe that using `inflation = 1.1 / 1.5` along with
-`conditionalUpdate = 1.0 / 0.7-0.9` seems to give the **highest possible values
-of modularity**. Time taken for completion of *10 iterations* is higher for
-`inflation = 1.1, conditionalUpdate = 1.0` than with
-`inflation = 1.5 / conditionalUpdate = 0.7-0.9`. Looking specifically at
-**web graphs**, the best choice of parameters seems to be
-`inflation = 1.1, conditionalUpdate = 1.0`. For **social/collaboration networks**,
-a choice of `inflation = 1.3-1.5, conditionalUpdate = 1.0` would be suitable.
-For **road networks**, selecting `inflation = 1.5, conditionalUpdate = 0.7-0.9`
-looks to be the best. Note that these paramter choices might differ if a
-different *labelset capacity* is used.
+Therefore, here my idea is to look if we can simply **do away** with **large**
+**hash tables** and **collision resolution** altogether, by simply *considering*
+*identical hash keys* as *identical labels*. This may lead to *bad communities*,
+but that is what this experiment is for. If they do yield good communities it
+can be a big win in performance. Note that such a scheme is only likely to cause
+issues only in the *first few iterations*, when we have a large number of
+labels. In addition, as there is potential for multiple labels to be combined,
+we will consider the *new label* to be the *hash key*.
+
+In this experiment we adjust the capacity of accumulator labelset from `2` to
+`4093` in multiples of 2. This capacity is always set to the highest prime
+number below a power of 2.  We choose the LabelRank *parameters* as
+`inflation = 1.5` and `conditionalUpdate = 0.5`. In addition, we use a fixed
+`labelset capacity` of `4`, and run the algorithm for exactly `10 iterations`.
+Note that this labelset capacity is different from the accumulator labelset capacity,
+and indicates the maximum number of labels allowed per vertex. We measure the
+**time taken** for the *computation* (performed 5 times for averaging), and
+*measure* the **modularity score** (one of the ways to measure quality of
+communities). This is repeated for *seventeen* different graphs.
+
+From the results, we observe that choosing a **lower accumulator labelset**
+**capacity** allows the computation for **complete faster** (likely due to higher
+cache hits). However with higher accumulator labelset capacities, the time taken
+may increase beyond the time required for a full size accumulator labelset. This
+is because of the additional modulus (`%`) operator required with a limited
+capacity accumulator labelset (my expectaction is that this would not
+significantly affect performance in a GPU). Again, a similar effect is observed
+with **modularity** (in the average case), which **increases with increasing**
+**accumulator labelset capacity**. It appears that using an **accumulator labelset**
+**capacity** of `61 / 127` would **yield a good enough modularity**. In some
+cases, using a smaller accumulator labelset capacity yeilds an even better
+modularity than full-size labelsets (but these are exception cases i think).
+Note that choices might differ if a different *labelset capacity* is used. It
+would be interesting to implement this kind of collision-ignoring hash table on
+a GPU, and observe its impact on LabelRank as well as the Louvain algorithm for
+community detection.
 
 All outputs are saved in a [gist] and a small part of the output is listed here.
 Some [charts] are also included below, generated from [sheets]. The input data
@@ -60,27 +89,34 @@ $ ...
 # order: 281903 size: 3985272 [directed] {} (symmetricize)
 # order: 281903 size: 4267175 [directed] {} (selfLoopAllVertices)
 # [0.065665 modularity] noop
-# [03741.334 ms; 0.390458 modularity] labelrankSeq {inflation: 2.0, cond_update: 1.0}
-# [04401.621 ms; 0.368602 modularity] labelrankSeq {inflation: 1.9, cond_update: 1.0}
-# [04335.695 ms; 0.321369 modularity] labelrankSeq {inflation: 1.8, cond_update: 1.0}
-# ...
-# [02264.883 ms; 0.403640 modularity] labelrankSeq {inflation: 1.3, cond_update: 0.1}
-# [02231.660 ms; 0.416514 modularity] labelrankSeq {inflation: 1.2, cond_update: 0.1}
-# [02208.212 ms; 0.441764 modularity] labelrankSeq {inflation: 1.1, cond_update: 0.1}
+# [02887.805 ms; 0.621151 modularity] labelrankSeq
+# [00745.747 ms; 0.079785 modularity] labelrankSeq {acc_capacity: 2}
+# [01106.795 ms; 0.132295 modularity] labelrankSeq {acc_capacity: 3}
+# [02811.777 ms; 0.455311 modularity] labelrankSeq {acc_capacity: 7}
+# [02933.439 ms; 0.533203 modularity] labelrankSeq {acc_capacity: 13}
+# [03158.569 ms; 0.570127 modularity] labelrankSeq {acc_capacity: 31}
+# [03474.475 ms; 0.581564 modularity] labelrankSeq {acc_capacity: 61}
+# [03422.630 ms; 0.615646 modularity] labelrankSeq {acc_capacity: 127}
+# [03482.629 ms; 0.607741 modularity] labelrankSeq {acc_capacity: 251}
+# [03477.951 ms; 0.609800 modularity] labelrankSeq {acc_capacity: 509}
+# [03606.549 ms; 0.615743 modularity] labelrankSeq {acc_capacity: 1021}
+# [03592.647 ms; 0.616814 modularity] labelrankSeq {acc_capacity: 2039}
+# [03593.207 ms; 0.620943 modularity] labelrankSeq {acc_capacity: 4093}
 #
 # Loading graph /home/subhajit/data/web-BerkStan.mtx ...
 # order: 685230 size: 7600595 [directed] {}
 # order: 685230 size: 13298940 [directed] {} (symmetricize)
 # order: 685230 size: 13984170 [directed] {} (selfLoopAllVertices)
 # [0.048410 modularity] noop
-# [08309.834 ms; 0.410866 modularity] labelrankSeq {inflation: 2.0, cond_update: 1.0}
-# [10264.402 ms; 0.441517 modularity] labelrankSeq {inflation: 1.9, cond_update: 1.0}
-# [09834.699 ms; 0.332533 modularity] labelrankSeq {inflation: 1.8, cond_update: 1.0}
+# [05051.676 ms; 0.642543 modularity] labelrankSeq
+# [01033.231 ms; 0.227399 modularity] labelrankSeq {acc_capacity: 2}
+# [01436.724 ms; 0.325241 modularity] labelrankSeq {acc_capacity: 3}
+# [05384.903 ms; 0.507040 modularity] labelrankSeq {acc_capacity: 7}
 # ...
 ```
 
-[![](https://i.imgur.com/4ajsNyf.png)][sheetp]
-[![](https://i.imgur.com/3PcfPaZ.png)][sheetp]
+[![](https://i.imgur.com/faBohhP.png)][sheetp]
+[![](https://i.imgur.com/7f9oVDw.png)][sheetp]
 
 <br>
 <br>
@@ -95,15 +131,14 @@ $ ...
 <br>
 <br>
 
-[![](https://i.imgur.com/FvgjEIX.jpg)](https://www.youtube.com/watch?v=4rrtQMCIrrk)<br>
-[![DOI](https://zenodo.org/badge/512458995.svg)](https://zenodo.org/badge/latestdoi/512458995)
+[![](https://i.imgur.com/r9CbaNA.jpg)](https://www.youtube.com/watch?v=4uXWszmV0_Q)<br>
 
 
 [Prof. Dip Sankar Banerjee]: https://sites.google.com/site/dipsankarban/
 [Prof. Kishore Kothapalli]: https://faculty.iiit.ac.in/~kkishore/
 [SuiteSparse Matrix Collection]: https://sparse.tamu.edu
 [LabelRank]: https://arxiv.org/abs/1303.0868
-[gist]: https://gist.github.com/wolfram77/e9137741753d366014927e59c2fe6b6a
-[charts]: https://imgur.com/a/mUh31mV
-[sheets]: https://docs.google.com/spreadsheets/d/16_vhQWnmD4BxDHheO8AKEIbWOtOBssS349oRSGAQpTw/edit?usp=sharing
-[sheetp]: https://docs.google.com/spreadsheets/d/e/2PACX-1vQA75KLWP9FkdRplra-WqUKutW-ALvc4rJann11Kq_EGqs_EL6qMbp_O00YSJTsNBe8-HKP0K7HDcEN/pubhtml
+[gist]: https://gist.github.com/wolfram77/52a8f10d9800a02ed27a34575198ef15
+[charts]: https://imgur.com/a/z4xlfy4
+[sheets]: https://docs.google.com/spreadsheets/d/16rPs-ERVQqnMoaCqaYizni8cdUwyU9Pf3A-mnovmYsM/edit?usp=sharing
+[sheetp]: https://docs.google.com/spreadsheets/d/e/2PACX-1vSwZpgdzMXwPcVAUpTjCdgkrQpp_F-ui0V4dnyz6-WeUcuPoylnfQDwPGlgOYfWQ512hmAwwjneCYbn/pubhtml
