@@ -1,7 +1,7 @@
-# https://www.kaggle.com/wolfram77/puzzlef-labelrank-per-iteration-modularity
+# https://www.kaggle.com/wolfram77/puzzlef-labelrank-ordered-vs-unordered
 import os
 from IPython.display import FileLink
-src="labelrank-per-iteration-modularity"
+src="labelrank-ordered-vs-unordered"
 inp="/kaggle/input/graphs"
 out="{}.txt".format(src)
 !printf "" > "$out"

@@ -1,6 +1,8 @@
 Variation of modularity with progression of iterations of the LabelRank
 algorithm for community detection.
 
+`TODO`
+
 [LabelRank] is an algorithm for **detecting communities in graphs**. *Community*
 *detection* helps us understand the *natural divisions in a network* in an
 **unsupervised manner**. It is used in **e-commerce** for *customer*

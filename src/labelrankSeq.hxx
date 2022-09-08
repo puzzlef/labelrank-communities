@@ -97,28 +97,29 @@ auto labelrankBestLabels(const vector<Labelset<K, V, N>>& ls, const G& x) {
  * @param x original graph
  * @param o labelrank options
  */
-template <size_t N, class G>
+template <size_t N, bool O, class G>
 auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
   using K = typename G::key_type;
   using V = typename G::edge_value_type;
-  auto M  = edgeWeight(x)/2;
   ALabelset<K, V> la(x.span());
   vector<Labelset<K, V, N>> ls(x.span());
   vector<Labelset<K, V, N>> ms(x.span());
-  x.forEachVertexKey([&](auto u) {
-    labelrankInitializeVertexW(la, ls, x, u, V(o.inflation));
-  });
-  for (int i=0; i<o.maxIterations; ++i) {
-    float t = measureDuration([&]() {
+  float t = measureDurationMarked([&](auto mark) {
+    la.clear();
+    ls.clear(); ls.resize(x.span());
+    ms.clear(); ms.resize(x.span());
+    mark([&]() {
       x.forEachVertexKey([&](auto u) {
-        if (labelrankIsVertexStable(ls, x, u, V(o.conditionalUpdate))) ms[u] = ls[u];
-        else labelrankUpdateVertexW(la, ms, ls, x, u, V(o.inflation));
+        labelrankInitializeVertexW(la, ls, x, u, V(o.inflation));
       });
-    }, o.repeat);
-    auto fc = [&](auto u) { return ms[u][0].first; };
-    auto Q  = modularity(x, fc, M, 1.0f);
-    printf("[%09.3f ms; %03d iteration; %01.6f modularity] labelrankSeq\n", t, i+1, Q);
-    swap(ls, ms);
-  }
-  return LabelrankResult(labelrankBestLabels(ls, x), o.maxIterations, 0.0f);
+      for (int i=0; i<o.maxIterations; ++i) {
+        x.forEachVertexKey([&](auto u) {
+          if (labelrankIsVertexStable(ls, x, u, V(o.conditionalUpdate))) { if (O) ms[u] = ls[u]; }
+          else labelrankUpdateVertexW(la, O? ls:ms, ls, x, u, V(o.inflation));
+        });
+        if (!O) swap(ls, ms);
+      }
+    });
+  }, o.repeat);
+  return LabelrankResult(labelrankBestLabels(ls, x), o.maxIterations, t);
 }

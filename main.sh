@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-src="labelrank-per-iteration-modularity"
+src="labelrank-ordered-vs-unordered"
 out="/home/resources/Documents/subhajit/$src.log"
 ulimit -s unlimited
 printf "" > "$out"
