@@ -675,7 +675,7 @@ class UnorderedBitset {
   inline bool add(const K& k, const V& v=V()) {
     auto it = locate_match(k);
     if  (it == end()) data.push_back({k, v});
-    else it.second = v;
+    else (*it).second = v;
     return true;
   }
   inline bool addUnchecked(const K& k, const V& v=V()) {
@@ -770,7 +770,7 @@ class OrderedBitset {
 
   inline bool add(const K& k, const V& v=V()) {
     auto it = locate_spot(k);
-    if (it != end() && (*it).first == k) it.second = v;
+    if (it != end() && (*it).first == k) (*it).second = v;
     else data.insert(it, {k, v});
     return true;
   }
@@ -889,7 +889,7 @@ class POrderedBitset {
 
   inline bool add(const K& k, const V& v=V()) {
     auto it = locate_match(k);
-    if (it != end()) it.second = v;
+    if (it != end()) (*it).second = v;
     else {
       data.push_back({k, v});
       if (unordered() <= LIMIT) mergePartitions();
