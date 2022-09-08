@@ -114,8 +114,8 @@ auto labelrankSeq(const G& x, const LabelrankOptions& o={}) {
       });
       for (int i=0; i<o.maxIterations; ++i) {
         x.forEachVertexKey([&](auto u) {
-          if (labelrankIsVertexStable(ls, x, u, V(o.conditionalUpdate))) { if (O) ms[u] = ls[u]; }
-          else labelrankUpdateVertexW(la, O? ls:ms, ls, x, u, V(o.inflation));
+          // if (labelrankIsVertexStable(ls, x, u, V(o.conditionalUpdate))) { if (O) ms[u] = ls[u]; }
+          /* else */ labelrankUpdateVertexW(la, O? ls:ms, ls, x, u, V(o.inflation));
         });
         if (!O) swap(ls, ms);
       }

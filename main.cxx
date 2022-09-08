@@ -13,7 +13,7 @@ using namespace std;
 template <class G>
 void measureModularity(const G& x, int repeat) {
   using K = typename G::key_type;
-  int iterations  = 10;
+  int iterations  = 50;
   float inflation = 1.5f;
   float conditionalUpdate = 0.5f;
   auto M = edgeWeight(x)/2;
